@@ -1,0 +1,74 @@
+pipeline {
+  agent any
+
+  tools {
+    maven 'maven'
+  }
+
+  stages {
+stage('Clean Workspace') {
+    steps {
+        cleanWs()
+    }
+}
+      stage('Checkout SCM') {
+            steps {
+                // Checkout only the 'sample' project
+                checkout([$class: 'GitSCM',
+                          branches: [[name: 'main']], // Specify the branch to checkout
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [[$class: 'CleanCheckout'],
+                                       [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [[path: 'sample']]]], // Specify the path to 'bootdemo'
+                          submoduleCfg: [],
+                          userRemoteConfigs: [[url: 'https://github.com/sakthivel94/Spring-Boot.git']]])
+            }
+        }
+
+    stage('Build') {
+      steps {
+        dir('C:/ProgramData/Jenkins/.jenkins/workspace/college/sample/sample') {
+          bat 'mvn clean install'
+        }
+      }
+    }
+
+  stage('SonarQube Analysis') {
+      environment {
+        SONAR_SCANNER_HOME = tool 'sonar-scanner' // Define SonarQube scanner tool
+        PATH = "${env.PATH}:${SONAR_SCANNER_HOME}/bin"
+      }
+      steps {
+dir('C:/ProgramData/Jenkins/.jenkins/workspace/college/sample/sample') {
+        withSonarQubeEnv('sonarserver') { 
+          bat 'mvn sonar:sonar'
+        }
+    }
+      }
+    }
+stage("Quality Gate") {
+      steps {
+        timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
+          script {
+            def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+            if (qg.status != 'OK') {
+              error "Pipeline aborted due to quality gate failure: ${qg.status}"
+            }
+          }
+        }
+      }
+    }
+    stage('Run') {
+      environment {
+       JAVA_HOME = 'C:\\Program Files\\Java\\jdk-17'
+        PATH = "${env.JAVA_HOME}\\bin;${env.PATH}"
+      }
+      steps {
+        script {
+          def jarFilePath = 'C:/ProgramData/Jenkins/.jenkins/workspace/college/sample/sample/target/sample-0.0.1-SNAPSHOT.jar'
+          def batchScript = "cmd /c \"java -jar ${jarFilePath}\""
+          bat label: 'Run JAR in Background', script: batchScript
+        }
+      }
+    }
+  }
+}
