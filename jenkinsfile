@@ -3,11 +3,11 @@ pipeline {
 
     tools {
         maven 'maven'
-        jdk 'jdk-17' // Ensure this matches the name of the JDK installation in Jenkins Global Tool Configuration
+        jdk 'jdk17' // Ensure this matches the name of the JDK installation in Jenkins Global Tool Configuration
     }
 
     environment {
-        JAVA_HOME = tool 'jdk-17'
+        JAVA_HOME = tool 'jdk17'
         PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
     }
 
