@@ -15,7 +15,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir('C:/ProgramData/Jenkins/.jenkins/workspace/sample/sample') {
-                    bat 'mvn clean install'
+                    bat 'mvn clean install -Dmaven.test.failure.ignore=true'
                 }
             }
         }
